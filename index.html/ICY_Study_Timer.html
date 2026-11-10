@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICY's Study Timer</title>
+</head>
+<body style="margin:0;background:#FFF3F8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&family=Nunito:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  .trk-wrap {
+    --ink: #3B2F4A;
+    --paper: #FFF3F8;
+    --paper-line: #EBD3E6;
+    --navy: #9B7BD1;
+    --navy-tint: #F1EAFB;
+    --sage: #F08DB5;
+    --sage-tint: #FDE6EF;
+    --brass: #C58AD6;
+    --brass-tint: #F6E8FA;
+    --muted: #8A7A9B;
+    --white: #FFFFFF;
+    font-family: 'Nunito', sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    padding: 26px 20px 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .trk-wrap * { box-sizing: border-box; }
+  .trk-wrap button { font-family: inherit; }
+  .trk-wrap { background: linear-gradient(160deg,#FFF3F8 0%,#F5EEFD 100%); }
+  .trk-header { border-bottom: 2px solid #EBD3E6 !important; }
+  .trk-title { background: linear-gradient(90deg,#E0679B,#8B66C7); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 32px; }
+  .trk-stat.accent { background: linear-gradient(135deg,#B28CE0,#F08DB5); border-color: transparent; }
+
+  .trk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 14px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+  }
+  .trk-title {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    font-size: 28px;
+    margin: 0;
+  }
+  .trk-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  /* ---- stat cards ---- */
+  .trk-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .trk-stat {
+    background: var(--white);
+    border: 1px solid var(--paper-line);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .trk-stat .label { font-size: 11px; color: var(--muted); text-transform: lowercase; }
+  .trk-stat .value {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+  .trk-stat.accent { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .trk-stat.accent .label { color: #F1EAFB; }
+  .trk-streak-note { font-size: 11px; color: var(--muted); margin: -14px 0 22px; }
+
+  /* ---- timer panel ---- */
+  .trk-timer {
+    background: var(--white);
+    border: 1px solid var(--paper-line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 26px;
+  }
+  .trk-timer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .trk-mode-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+  .trk-mode-btn {
+    border: 1px solid var(--paper-line);
+    background: var(--paper);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .trk-mode-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .trk-pomo-config {
+    display: none;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    font-size: 11.5px;
+    color: var(--muted);
+    align-items: center;
+  }
+  .trk-pomo-config.show { display: flex; }
+  .trk-pomo-config label { display: flex; align-items: center; gap: 5px; }
+  .trk-pomo-config input {
+    width: 46px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 4px 6px;
+    border: 1px solid var(--paper-line);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .trk-clock-wrap { display: flex; flex-direction: column; align-items: center; min-width: 132px; }
+  .trk-phase-pill {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    padding: 2px 9px;
+    border-radius: 10px;
+    background: var(--sage-tint);
+    color: var(--sage);
+    margin-bottom: 3px;
+    display: none;
+  }
+  .trk-phase-pill.show { display: inline-block; }
+  .trk-phase-pill.brk { background: var(--brass-tint); color: var(--brass); }
+  .trk-cycle-note { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .trk-timer select {
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--paper-line);
+    border-radius: 14px;
+    background: var(--paper);
+    color: var(--ink);
+    min-width: 140px;
+    flex: 1 1 160px;
+  }
+  .trk-clock {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 30px;
+    font-weight: 500;
+    min-width: 132px;
+    text-align: center;
+  }
+  .trk-btn {
+    border: none;
+    border-radius: 14px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .trk-btn.start { background: var(--sage); color: var(--white); }
+  .trk-btn.stop { background: var(--brass); color: var(--white); }
+  .trk-btn.reset { background: transparent; color: var(--muted); border: 1px solid var(--paper-line); }
+  .trk-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .trk-active-note { font-size: 12px; color: var(--sage); margin-top: 10px; }
+
+  /* ---- section headings ---- */
+  .trk-h2 {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    margin: 0 0 12px;
+  }
+  .trk-section { margin-bottom: 30px; }
+
+  /* ---- calendar heatmap ---- */
+  .trk-cal-months {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .trk-cal-month { background: var(--white); border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px; }
+  .trk-cal-month h4 { font-family: 'Quicksand', sans-serif; font-size: 13px; margin: 0 0 8px; font-weight: 600; }
+  .trk-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .trk-cal-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: #F6E9F3;
+    position: relative;
+    cursor: default;
+  }
+  .trk-cal-cell[data-lvl="0"] { background: #F6E9F3; }
+  .trk-cal-cell[data-lvl="1"] { background: #F8CFE2; }
+  .trk-cal-cell[data-lvl="2"] { background: #EFA6C8; }
+  .trk-cal-cell[data-lvl="3"] { background: #C79BE0; }
+  .trk-cal-cell[data-lvl="4"] { background: #9B7BD1; }
+  .trk-cal-cell.pad { background: transparent; }
+  .trk-cal-cell:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--white);
+    font-size: 10.5px;
+    padding: 4px 7px;
+    border-radius: 14px;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .trk-legend { display: flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--muted); margin-top: 10px; }
+  .trk-legend .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  /* ---- module bars ---- */
+  .trk-bars { display: flex; flex-direction: column; gap: 8px; }
+  .trk-bar-row { display: grid; grid-template-columns: 200px 1fr 60px; gap: 10px; align-items: center; font-size: 12.5px; }
+  .trk-bar-track { background: var(--paper-line); border-radius: 14px; height: 10px; overflow: hidden; }
+  .trk-bar-fill { height: 100%; background: var(--navy); }
+  .trk-bar-fill.flk2 { background: var(--sage); }
+  .trk-bar-hrs { text-align: right; color: var(--muted); }
+
+  /* ---- topic table ---- */
+  .trk-module-block { margin-bottom: 14px; }
+  .trk-module-head {
+    display: flex; justify-content: space-between; cursor: pointer;
+    padding: 8px 10px; background: var(--white); border: 1px solid var(--paper-line); border-radius: 14px;
+    font-size: 13px; font-weight: 600; font-family: 'Quicksand', sans-serif;
+  }
+  .trk-module-head .flk-tag { font-family: 'IBM Plex Sans'; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .trk-topic-list { display: none; padding: 6px 10px 2px; }
+  .trk-module-block.open .trk-topic-list { display: block; }
+  .trk-module-block.open .trk-module-head { border-bottom: none; border-radius: 14px 3px 0 0; }
+  .trk-topic-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px dotted var(--paper-line); }
+  .trk-topic-row:last-child { border-bottom: none; }
+  .trk-topic-row .t-name { color: var(--ink); }
+  .trk-topic-row .t-time { color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+
+  /* ---- session log ---- */
+  .trk-log { font-size: 12px; }
+  .trk-log-row { display: grid; grid-template-columns: 90px 1fr 70px; gap: 8px; padding: 5px 0; border-bottom: 1px dotted var(--paper-line); color: var(--muted); }
+  .trk-log-row .l-topic { color: var(--ink); }
+
+  .trk-footer { display:flex; justify-content: space-between; align-items:center; margin-top: 20px; }
+  .trk-reset-btn { font-size: 11.5px; color: var(--muted); background: none; border: 1px solid var(--paper-line); border-radius: 14px; padding: 6px 12px; cursor: pointer; }
+
+  @media (max-width: 820px) {
+    .trk-stats { grid-template-columns: repeat(2, 1fr); }
+    .trk-cal-months { grid-template-columns: repeat(2, 1fr); }
+    .trk-bar-row { grid-template-columns: 120px 1fr 50px; }
+  }
+</style>
+
+<div class="trk-wrap" id="trkRoot">
+  <div class="trk-header">
+    <div>
+      <p class="trk-title">ICY's Study Timer</p>
+      <p class="trk-sub">Time every study session, one subject at a time ♡</p>
+    </div>
+  </div>
+
+  <div class="trk-stats">
+    <div class="trk-stat accent"><div class="label">total studied</div><div class="value" id="stTotal">0h 0m</div></div>
+    <div class="trk-stat"><div class="label">today</div><div class="value" id="stToday">0h 0m</div></div>
+    <div class="trk-stat"><div class="label">this week</div><div class="value" id="stWeek">0h 0m</div></div>
+    <div class="trk-stat"><div class="label">day streak</div><div class="value" id="stStreak">0</div></div>
+  </div>
+  <div class="trk-streak-note" id="streakSettingsRow">
+    allow <input type="number" id="cfgGrace" min="0" max="7" value="2" style="width:36px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 5px;border:1px solid var(--paper-line);border-radius:3px;text-align:center;"> missed day(s) in a row before the streak resets
+  </div>
+
+  <div class="trk-timer">
+    <div class="trk-mode-toggle">
+      <button class="trk-mode-btn active" id="modeStopwatch" type="button">Stopwatch</button>
+      <button class="trk-mode-btn" id="modePomodoro" type="button">Pomodoro</button>
+    </div>
+    <div class="trk-pomo-config" id="pomoConfig">
+      <label>Work <input type="number" id="cfgWork" min="1" max="120" value="25"> min</label>
+      <label>Break <input type="number" id="cfgBreak" min="1" max="60" value="5"> min</label>
+      <label>Long break <input type="number" id="cfgLong" min="1" max="60" value="15"> min</label>
+      <label>every <input type="number" id="cfgEvery" min="1" max="12" value="4"> pomodoros</label>
+    </div>
+    <div class="trk-timer-row">
+      <select id="selFlk" style="display:none"></select>
+      <select id="selModule"></select>
+      <select id="selTopic" style="display:none"></select>
+      <div class="trk-clock-wrap">
+        <span class="trk-phase-pill" id="phasePill">work</span>
+        <div class="trk-clock" id="clock">00:00:00</div>
+        <span class="trk-cycle-note" id="cycleNote"></span>
+      </div>
+      <button class="trk-btn start" id="btnStart">Start</button>
+      <button class="trk-btn stop" id="btnStop" disabled>Stop &amp; log</button>
+    </div>
+    <div class="trk-active-note" id="activeNote"></div>
+  </div>
+
+  <div class="trk-section">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><p class="trk-h2" style="margin:0">Calendar</p><button type="button" id="yrPrev" aria-label="Previous year" style="border:1px solid var(--paper-line);background:#fff;color:var(--navy);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:15px">‹</button><b id="yrLabel" style="font-family:'Quicksand',sans-serif;color:var(--ink);min-width:44px;text-align:center"></b><button type="button" id="yrNext" aria-label="Next year" style="border:1px solid var(--paper-line);background:#fff;color:var(--navy);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:15px">›</button></div>
+    <div class="trk-cal-months" id="calMonths"></div>
+    <div class="trk-legend">
+      less
+      <span class="sw" data-lvl="0" style="background:#F6E9F3"></span>
+      <span class="sw" data-lvl="1" style="background:#F8CFE2"></span>
+      <span class="sw" data-lvl="2" style="background:#EFA6C8"></span>
+      <span class="sw" data-lvl="3" style="background:#C79BE0"></span>
+      <span class="sw" data-lvl="4" style="background:#9B7BD1"></span>
+      more
+    </div>
+  </div>
+
+  <div class="trk-section">
+    <p class="trk-h2">Time by subject</p>
+    <div class="trk-bars" id="moduleBars"></div>
+  </div>
+
+  <div id="topicBlocks" style="display:none"></div>
+
+  <div class="trk-section">
+    <p class="trk-h2">Recent sessions</p>
+    <div class="trk-log" id="sessionLog"></div>
+  </div>
+
+  <div class="trk-footer">
+    <span style="font-size:11px;color:var(--muted)">Saved automatically as you go</span>
+    <button class="trk-reset-btn" id="btnReset">Reset all data</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const MODULES = [
+    { flk: "Study", name: "Cardiovascular disease", topics: ["Cardiovascular disease"] },
+    { flk: "Study", name: "Life support", topics: ["Life support"] },
+    { flk: "Study", name: "Pharmacology", topics: ["Pharmacology"] },
+    { flk: "Study", name: "Cardiovascular anatomy & physiology", topics: ["Cardiovascular anatomy & physiology"] }
+  ];
+
+  const STORAGE_KEY = "icy_study_timer_v1";
+  let data = { topicSeconds: {}, dailySeconds: {}, sessions: [], active: null, settings: { graceDays: 2 } };
+  let tickInterval = null;
+  let saveTimer = null;
+  let currentMode = "stopwatch"; // 'stopwatch' | 'pomodoro'
+  let audioCtx = null;
+
+  const $ = id => document.getElementById(id);
+  const key = (flk, mod, topic) => `${flk}||${mod}||${topic}`;
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+
+  function beep(freq, startAt, dur) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.25, startAt + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(startAt); osc.stop(startAt + dur + 0.05);
+  }
+  function playAlarm(kind) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const now = audioCtx.currentTime;
+      if (kind === "break") {
+        // descending three-note chime: time for a break
+        beep(880, now, 0.18); beep(660, now + 0.22, 0.18); beep(523, now + 0.44, 0.3);
+      } else {
+        // ascending two-note chime: back to work
+        beep(523, now, 0.16); beep(784, now + 0.2, 0.32);
+      }
+    } catch (e) { /* audio not available */ }
+  }
+
+  function fmtHM(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h}h ${m}m`;
+  }
+  function fmtClock(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const p = n => String(n).padStart(2, "0");
+    return `${p(h)}:${p(m)}:${p(s)}`;
+  }
+  function fmtShort(seconds) {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  async function save() {
+    try { await window.storage.set(STORAGE_KEY, JSON.stringify(data), false); return; } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+  async function load() {
+    try {
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if (res && res.value) { data = JSON.parse(res.value); if (!data.settings) data.settings = { graceDays: 2 }; return; }
+    } catch (e) {}
+    try {
+      const v = localStorage.getItem(STORAGE_KEY);
+      if (v) { data = JSON.parse(v); if (!data.settings) data.settings = { graceDays: 2 }; }
+    } catch (e) { /* no saved data yet */ }
+  }
+
+  // ---------- populate selects ----------
+  function populateSelects() {
+    const flkSel = $("selFlk");
+    const flks = ["Study"];
+    flkSel.innerHTML = flks.map(f => `<option value="${f}">${f}</option>`).join("");
+    flkSel.addEventListener("change", populateModules);
+    populateModules();
+    $("selModule").addEventListener("change", populateTopics);
+  }
+  function populateModules() {
+    const flk = $("selFlk").value;
+    const mods = MODULES.filter(m => m.flk === flk);
+    $("selModule").innerHTML = mods.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
+    populateTopics();
+  }
+  function populateTopics() {
+    const flk = $("selFlk").value;
+    const modName = $("selModule").value;
+    const mod = MODULES.find(m => m.flk === flk && m.name === modName);
+    $("selTopic").innerHTML = (mod ? mod.topics : []).map(t => `<option value="${t}">${t}</option>`).join("");
+  }
+
+  // ---------- mode toggle ----------
+  function setMode(mode) {
+    currentMode = mode;
+    $("modeStopwatch").classList.toggle("active", mode === "stopwatch");
+    $("modePomodoro").classList.toggle("active", mode === "pomodoro");
+    $("pomoConfig").classList.toggle("show", mode === "pomodoro");
+    $("phasePill").classList.remove("show");
+    $("cycleNote").textContent = "";
+  }
+
+  // ---------- timer ----------
+  function startTimer() {
+    const flk = $("selFlk").value, mod = $("selModule").value, topic = $("selTopic").value;
+    if (!topic) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) {}
+    const now = Date.now();
+    data.active = {
+      flk, mod, topic, mode: currentMode,
+      startTs: now, lastFlushTs: now,
+      phase: "work", phaseStartTs: now, cycle: 0,
+      workMin: parseFloat($("cfgWork").value) || 25,
+      breakMin: parseFloat($("cfgBreak").value) || 5,
+      longMin: parseFloat($("cfgLong").value) || 15,
+      every: parseInt($("cfgEvery").value) || 4,
+    };
+    save();
+    $("btnStart").disabled = true; $("btnStop").disabled = false;
+    [$("selFlk"), $("selModule"), $("selTopic"), $("modeStopwatch"), $("modePomodoro"),
+     $("cfgWork"), $("cfgBreak"), $("cfgLong"), $("cfgEvery")].forEach(el => el.disabled = true);
+    $("activeNote").textContent = `Timing: ${topic}`;
+    if (currentMode === "pomodoro") {
+      $("phasePill").classList.add("show");
+      updatePhasePill();
+    }
+    tickInterval = setInterval(tick, 1000);
+    tick();
+    saveTimer = setInterval(() => flushActive(false), 30000);
+  }
+
+  function phaseDurSec(a) {
+    if (a.phase === "work") return a.workMin * 60;
+    if (a.phase === "longbreak") return a.longMin * 60;
+    return a.breakMin * 60;
+  }
+  function updatePhasePill() {
+    const a = data.active;
+    const pill = $("phasePill");
+    if (a.phase === "work") { pill.textContent = "work"; pill.classList.remove("brk"); }
+    else { pill.textContent = a.phase === "longbreak" ? "long break" : "break"; pill.classList.add("brk"); }
+    $("cycleNote").textContent = `pomodoro ${a.cycle + (a.phase === "work" ? 1 : 0)}`;
+  }
+
+  function tick() {
+    if (!data.active) return;
+    const a = data.active;
+    if (a.mode === "pomodoro") {
+      let now = Date.now();
+      let guard = 0;
+      while (guard++ < 50) {
+        const elapsed = (now - a.phaseStartTs) / 1000;
+        const dur = phaseDurSec(a);
+        const remaining = dur - elapsed;
+        if (remaining > 0) {
+          $("clock").textContent = fmtClock(Math.max(0, remaining));
+          updatePhasePill();
+          break;
+        }
+        // phase transition: flush any work time earned in this phase, then switch
+        flushActive(false, a.phaseStartTs + dur * 1000);
+        if (a.phase === "work") {
+          a.cycle += 1;
+          a.phase = (a.cycle % a.every === 0) ? "longbreak" : "break";
+          playAlarm("break");
+        } else {
+          a.phase = "work";
+          playAlarm("work");
+        }
+        a.phaseStartTs = a.phaseStartTs + dur * 1000;
+        a.lastFlushTs = a.phaseStartTs;
+      }
+    } else {
+      const elapsed = (Date.now() - a.startTs) / 1000;
+      $("clock").textContent = fmtClock(elapsed);
+    }
+  }
+
+  function flushActive(clearAfter, uptoTs) {
+    if (!data.active) return;
+    const a = data.active;
+    const now = uptoTs || Date.now();
+    const shouldCount = a.mode === "stopwatch" || a.phase === "work";
+    if (shouldCount) {
+      const elapsed = (now - a.lastFlushTs) / 1000;
+      if (elapsed > 0.5) {
+        const k = key(a.flk, a.mod, a.topic);
+        data.topicSeconds[k] = (data.topicSeconds[k] || 0) + elapsed;
+        const day = todayStr();
+        data.dailySeconds[day] = (data.dailySeconds[day] || 0) + elapsed;
+        data.sessions.unshift({ date: day, flk: a.flk, mod: a.mod, topic: a.topic, seconds: elapsed });
+        data.sessions = data.sessions.slice(0, 200);
+      }
+    }
+    a.lastFlushTs = now;
+    if (a.mode === "stopwatch") a.startTs = now;
+    if (clearAfter) { data.active = null; }
+    save();
+  }
+  function stopTimer() {
+    flushActive(true);
+    clearInterval(tickInterval); tickInterval = null;
+    clearInterval(saveTimer); saveTimer = null;
+    $("clock").textContent = "00:00:00";
+    $("btnStart").disabled = false; $("btnStop").disabled = true;
+    [$("selFlk"), $("selModule"), $("selTopic"), $("modeStopwatch"), $("modePomodoro"),
+     $("cfgWork"), $("cfgBreak"), $("cfgLong"), $("cfgEvery")].forEach(el => el.disabled = false);
+    $("activeNote").textContent = "";
+    $("phasePill").classList.remove("show");
+    $("cycleNote").textContent = "";
+    renderAll();
+  }
+
+  // ---------- rendering ----------
+  function totalSeconds() {
+    return Object.values(data.topicSeconds).reduce((a, b) => a + b, 0);
+  }
+  function weekSeconds() {
+    const now = new Date();
+    const day = (now.getDay() + 6) % 7; // Monday=0
+    const monday = new Date(now); monday.setDate(now.getDate() - day);
+    let sum = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      sum += data.dailySeconds[d.toISOString().slice(0,10)] || 0;
+    }
+    return sum;
+  }
+  function streak() {
+    const grace = data.settings && typeof data.settings.graceDays === "number" ? data.settings.graceDays : 1;
+    let count = 0;
+    let missed = 0;
+    let d = new Date();
+    const hasToday = (data.dailySeconds[todayStr()] || 0) > 0;
+    if (!hasToday) d.setDate(d.getDate() - 1); // today not over yet — don't penalize it
+    let guard = 0;
+    while (guard++ < 400) {
+      const ds = d.toISOString().slice(0, 10);
+      const has = (data.dailySeconds[ds] || 0) > 0;
+      if (has) {
+        count++; missed = 0;
+      } else {
+        missed++;
+        if (missed > grace) break;
+      }
+      d.setDate(d.getDate() - 1);
+    }
+    return count;
+  }
+
+  function renderStats() {
+    $("stTotal").textContent = fmtHM(totalSeconds());
+    $("stToday").textContent = fmtHM(data.dailySeconds[todayStr()] || 0);
+    $("stWeek").textContent = fmtHM(weekSeconds());
+    $("stStreak").textContent = streak();
+  }
+
+  let calYear = new Date().getFullYear();
+  function renderCalendar() {
+    const months = []; for (let i = 0; i < 12; i++) months.push([calYear, i]);
+    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    $("yrLabel").textContent = calYear;
+    const container = $("calMonths");
+    container.innerHTML = "";
+    months.forEach(([y, m], idx) => {
+      const box = document.createElement("div");
+      box.className = "trk-cal-month";
+      const first = new Date(y, m, 1);
+      const startPad = (first.getDay() + 6) % 7; // Monday-start
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      let cellsHtml = "";
+      for (let i = 0; i < startPad; i++) cellsHtml += `<div class="trk-cal-cell pad"></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const secs = data.dailySeconds[ds] || 0;
+        let lvl = 0;
+        if (secs > 0 && secs < 1800) lvl = 1;
+        else if (secs >= 1800 && secs < 5400) lvl = 2;
+        else if (secs >= 5400 && secs < 10800) lvl = 3;
+        else if (secs >= 10800) lvl = 4;
+        cellsHtml += `<div class="trk-cal-cell" data-lvl="${lvl}" data-tip="${ds}: ${fmtShort(secs)}"></div>`;
+      }
+      box.innerHTML = `<h4>${names[idx]} ${calYear}</h4><div class="trk-cal-grid">${cellsHtml}</div>`;
+      container.appendChild(box);
+    });
+  }
+
+  function renderModuleBars() {
+    const totals = MODULES.map(m => {
+      const sec = m.topics.reduce((a, t) => a + (data.topicSeconds[key(m.flk, m.name, t)] || 0), 0);
+      return { name: m.name, flk: m.flk, sec };
+    });
+    const max = Math.max(1, ...totals.map(t => t.sec));
+    const el = $("moduleBars");
+    el.innerHTML = totals
+      .sort((a, b) => b.sec - a.sec)
+      .map(t => `<div class="trk-bar-row">
+        <span>${t.name}</span>
+        <div class="trk-bar-track"><div class="trk-bar-fill " style="width:${(t.sec/max*100).toFixed(1)}%"></div></div>
+        <span class="trk-bar-hrs">${fmtShort(t.sec)}</span>
+      </div>`).join("");
+  }
+
+  function renderTopicBlocks() {
+    const el = $("topicBlocks");
+    const openState = {};
+    el.querySelectorAll(".trk-module-block").forEach(b => { openState[b.dataset.mod] = b.classList.contains("open"); });
+    el.innerHTML = MODULES.map(m => {
+      const rows = m.topics.map(t => {
+        const sec = data.topicSeconds[key(m.flk, m.name, t)] || 0;
+        return `<div class="trk-topic-row"><span class="t-name">${t}</span><span class="t-time">${sec > 0 ? fmtShort(sec) : "—"}</span></div>`;
+      }).join("");
+      const modSec = m.topics.reduce((a, t) => a + (data.topicSeconds[key(m.flk, m.name, t)] || 0), 0);
+      const isOpen = openState[m.name];
+      return `<div class="trk-module-block ${isOpen ? 'open' : ''}" data-mod="${m.name}">
+        <div class="trk-module-head" data-toggle="${m.name}">
+          <span>${m.name} <span class="flk-tag">(${m.flk})</span></span>
+          <span class="flk-tag">${fmtShort(modSec)}</span>
+        </div>
+        <div class="trk-topic-list">${rows}</div>
+      </div>`;
+    }).join("");
+    el.querySelectorAll("[data-toggle]").forEach(h => {
+      h.addEventListener("click", () => h.closest(".trk-module-block").classList.toggle("open"));
+    });
+  }
+
+  function renderLog() {
+    const el = $("sessionLog");
+    if (!data.sessions.length) { el.innerHTML = `<p style="color:var(--muted);font-size:12px">No sessions logged yet — start the timer above.</p>`; return; }
+    el.innerHTML = data.sessions.slice(0, 12).map(s =>
+      `<div class="trk-log-row"><span>${s.date}</span><span class="l-topic">${s.topic}</span><span>${fmtShort(s.seconds)}</span></div>`
+    ).join("");
+  }
+
+  function renderAll() {
+    renderStats(); renderCalendar(); renderModuleBars(); renderTopicBlocks(); renderLog();
+  }
+
+  // ---------- reset ----------
+  async function resetAll() {
+    if (!confirm("Clear all logged study time? This can't be undone.")) return;
+    data = { topicSeconds: {}, dailySeconds: {}, sessions: [], active: null, settings: data.settings || { graceDays: 2 } };
+    await save();
+    renderAll();
+  }
+
+  // ---------- init ----------
+  (async function init() {
+    populateSelects();
+    await load();
+    if (data.active) {
+      const a = data.active;
+      currentMode = a.mode || "stopwatch";
+      setMode(currentMode);
+      $("selFlk").value = a.flk;
+      populateModules();
+      $("selModule").value = a.mod;
+      populateTopics();
+      $("selTopic").value = a.topic;
+      if (currentMode === "pomodoro") {
+        $("cfgWork").value = a.workMin; $("cfgBreak").value = a.breakMin;
+        $("cfgLong").value = a.longMin; $("cfgEvery").value = a.every;
+        $("phasePill").classList.add("show");
+      }
+      $("btnStart").disabled = true; $("btnStop").disabled = false;
+      [$("selFlk"), $("selModule"), $("selTopic"), $("modeStopwatch"), $("modePomodoro"),
+       $("cfgWork"), $("cfgBreak"), $("cfgLong"), $("cfgEvery")].forEach(el => el.disabled = true);
+      $("activeNote").textContent = `Timing: ${a.topic} (resumed)`;
+      tickInterval = setInterval(tick, 1000);
+      tick();
+      saveTimer = setInterval(() => flushActive(false), 30000);
+    }
+    renderAll();
+    $("btnStart").addEventListener("click", startTimer);
+    $("btnStop").addEventListener("click", stopTimer);
+    $("btnReset").addEventListener("click", resetAll);
+    $("yrPrev").addEventListener("click", () => { calYear--; renderCalendar(); });
+    $("yrNext").addEventListener("click", () => { calYear++; renderCalendar(); });
+    $("modeStopwatch").addEventListener("click", () => { if (!data.active) setMode("stopwatch"); });
+    $("modePomodoro").addEventListener("click", () => { if (!data.active) setMode("pomodoro"); });
+    $("cfgGrace").value = data.settings.graceDays;
+    $("cfgGrace").addEventListener("change", () => {
+      let v = parseInt($("cfgGrace").value);
+      if (isNaN(v) || v < 0) v = 0;
+      data.settings.graceDays = v;
+      save();
+      renderStats();
+    });
+  })();
+})();
+</script>
+
+</body>
+</html>
